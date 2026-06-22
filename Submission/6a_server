@@ -20,17 +20,20 @@ def sent_analyzer() -> str:
     response = emotion_detector(text_to_analyse)
 
     if response["dominant_emotion"] is None:
-        return "Invalid text! Please try again!."
+        return "Invalid text! Please try again."
 
     return (
         "For the given statement, the system response is "
-        f"'anger': {response['anger']}, "
-        f"'disgust': {response['disgust']}, "
-        f"'fear': {response['fear']}, "
-        f"'joy': {response['joy']} and "
-        f"'sadness': {response['sadness']}. "
-        "The dominant emotion is "
-        f"{response['dominant_emotion']}."
+        "'anger': {}, 'disgust': {}, 'fear': {}, "
+        "'joy': {} and 'sadness': {}. "
+        "The dominant emotion is {}."
+    ).format(
+            response["anger"],
+            response["disgust"],
+            response["fear"],
+            response["joy"],
+            response["sadness"],
+            response["dominant_emotion"],
     )
 
 
