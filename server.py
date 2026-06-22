@@ -4,104 +4,46 @@ from __future__ import annotations
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
 
-from flask import Flask, jsonify, render_template_string, request
+from flask import Flask, render_template, request
 
 from EmotionDetection import emotion_detector
 
 
-APP = Flask(__name__)
+APP = Flask("Emotion Detector")
 
-INDEX_HTML = """
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Emotion Detection</title>
-</head>
-<body>
-  <h1>Emotion Detection</h1>
-  <form action="/emotionDetector" method="post">
-    <label for="text">Enter text:</label><br />
-    <textarea id="text" name="text" rows="4" cols="50">
-      {{ text or '' }}
-    </textarea>
-    <br />
-    <button type="submit">Analyze</button>
-  </form>
-  {% if error %}
-    <p style="color: red; font-weight: bold;">{{ error }}</p>
-  {% endif %}
-  {% if result %}
-    <h2>Analysis Result</h2>
-    <p>For the given statement, the system response is
-      anger: {{ result.anger }},
-      disgust: {{ result.disgust }},
-      fear: {{ result.fear }},
-      joy: {{ result.joy }} and
-      sadness: {{ result.sadness }}.
-      The dominant emotion is <strong>{{ result.dominant_emotion }}</strong>.
-    </p>
-  {% endif %}
-</body>
-</html>
-"""
+
+@APP.route("/emotionDetector")
+def sent_analyzer() -> str:
+    """Analyze emotion for the submitted text query parameter."""
+    text_to_analyse = request.args.get("textToAnalyze", "")
+    response = emotion_detector(text_to_analyse)
+
+    if response["dominant_emotion"] is None:
+        return "Invalid text! Please try again!."
+
+    return (
+        "For the given statement, the system response is "
+        f"'anger': {response['anger']}, "
+        f"'disgust': {response['disgust']}, "
+        f"'fear': {response['fear']}, "
+        f"'joy': {response['joy']} and "
+        f"'sadness': {response['sadness']}. "
+        "The dominant emotion is "
+        f"{response['dominant_emotion']}."
+    )
 
 
 @APP.route("/")
-def index() -> str:
-    """Render the emotion detection form."""
-    return render_template_string(INDEX_HTML, error=None, result=None, text="")
+def render_index_page() -> str:
+    """Serve the application home page."""
+    return render_template("index.html")
 
 
-@APP.route("/emotionDetector", methods=["POST"])
-def emotion_detector_route() -> Any:
-    """Handle emotion detection requests and return JSON or page output."""
-    text = request.form.get("text", "")
-    if not text or not text.strip():
-        return render_template_string(
-            INDEX_HTML,
-            error="Invalid input! Try again.",
-            result=None,
-            text=text,
-        )
-
-    result = emotion_detector(text)
-    if result.get("dominant_emotion") is None:
-        return render_template_string(
-            INDEX_HTML,
-            error="Invalid input! Try again.",
-            result=None,
-            text=text,
-        )
-    return render_template_string(
-        INDEX_HTML,
-        error=None,
-        result=result,
-        text=text,
-    )
-
-
-@APP.route("/emotionDetector/json", methods=["POST"])
-def emotion_detector_json_route() -> Any:
-    """Return a JSON response for emotion detection requests."""
-    payload = request.get_json(silent=True) or {}
-    text = (
-        payload.get("text")
-        if payload
-        else request.form.get("text", "")
-    )
-    if not text or not text.strip():
-        return (
-            jsonify({"error": "Blank input provided", "status_code": 400}),
-            400,
-        )
-
-    result = emotion_detector(text)
-    if result.get("dominant_emotion") is None:
-        return jsonify({"error": "Blank input", "status_code": 400}), 400
-    return jsonify(result), 200
+@APP.route("/analyze")
+def render_index_page_alias() -> str:
+    """Serve the application home page for legacy path compatibility."""
+    return render_template("index.html")
 
 
 def run_static_analysis() -> str:
